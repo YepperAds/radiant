@@ -13,7 +13,7 @@ import UserInfoForm from './pages/UserInfoForm'
 import CampaignReview from './pages/CampaignReview'
 
 // Campaigns
-import SelectPlatforms from './pages/SelectPlatforms'
+// import SelectPlatforms from './pages/SelectPlatforms'
 import AdultCampaigns from './pages/page/AdultsCampaigns'
 import CarOwnersCampaigns from './pages/page/carOwnersCampaigns'
 import CountrySidersCampaigns from './pages/page/countrySidersCampaigns'
