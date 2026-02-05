@@ -95,13 +95,6 @@ function Section1() {
               {/* Gradient Overlay for Text Visibility */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-              {/* Budget Badge */}
-              {item.budget && (
-                <div className="absolute top-4 right-4 bg-gray-800/60 backdrop-blur-md px-3 py-1 rounded text-[10px] text-white font-medium uppercase tracking-wider">
-                  Total Budget: {item.budget}
-                </div>
-              )}
-
               {/* Content */}
               <div className="absolute bottom-0 left-0 p-6 w-full">
                 <h3 className="text-white font-bold text-lg leading-tight mb-4">
