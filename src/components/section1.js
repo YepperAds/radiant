@@ -66,7 +66,7 @@ function Section1() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Choose the campaigns</h1>
+          <h1 className="text-3xl font-bold text-blue-300 mb-8">Choose the campaigns</h1>
           <div className="relative max-w-xl mx-auto">
             <input
               type="text"
