@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await axios.get(`${API_URL}/api/auth/me`);
+      const response = await axios.get(`https://yepper-backend-ll50.onrender.com/api/api/auth/me`);
       
       if (response.data.success && response.data.user) {
         setUser(response.data.user);
@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }) => {
   const handleAutoLogin = async (token) => {
     try {
       setAuthToken(token);
-      const response = await axios.get(`${API_URL}/api/auth/me`);
+      const response = await axios.get(`https://yepper-backend-ll50.onrender.com/api/api/auth/me`);
       if (response.data.success && response.data.user) {
         setUser(response.data.user);
         setIsAuthenticated(true);
@@ -150,7 +150,7 @@ export const AuthProvider = ({ children }) => {
         requestData.returnUrl = returnUrl;
       }
 
-      const response = await axios.post(`${API_URL}/api/auth/register-waitlist`, requestData);
+      const response = await axios.post(`https://yepper-backend-ll50.onrender.com/api/api/auth/register-waitlist`, requestData);
 
       return {
         success: true,
@@ -165,7 +165,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
+      const response = await axios.post(`https://yepper-backend-ll50.onrender.com/api/api/auth/login`, {
         email,
         password
       });

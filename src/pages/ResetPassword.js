@@ -40,7 +40,7 @@ const handleSubmit = async (e) => {
     // CHANGE THIS LINE - use local backend
     const API_URL = process.env.REACT_APP_API_URL || 'https://yepper-backend-ll50.onrender.com';
     
-    const response = await fetch(`${API_URL}/api/password/reset-password`, {
+    const response = await fetch(`https://yepper-backend-ll50.onrender.com/api/api/password/reset-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

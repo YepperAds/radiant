@@ -406,7 +406,7 @@ function Campaigns() {
       };
 
       const response = await axios.post(
-        `${API_URL}/parents-campaign`,
+        "https://yepper-backend-ll50.onrender.com/api/parents-campaign",
         campaignData,
         {
           headers: {
@@ -435,7 +435,7 @@ function Campaigns() {
     try {
       setLoading(true);
 
-      const response = await axios.get(`${API_URL}/parents-campaign`);
+      const response = await axios.get("https://yepper-backend-ll50.onrender.com/api/parents-campaign");
 
       if (response.data.success) {
         setSavedCampaigns(response.data.data);
@@ -487,7 +487,7 @@ function Campaigns() {
       };
 
       const response = await axios.put(
-        `${API_URL}/parents-campaign/${selectedCampaign._id}`,
+        "https://yepper-backend-ll50.onrender.com/api/parents-campaign/${selectedCampaign._id}",
         campaignData,
         {
           headers: {
@@ -519,7 +519,7 @@ function Campaigns() {
       setLoading(true);
 
       const response = await axios.delete(
-        `${API_URL}/parents-campaign/${campaignId}`
+        "https://yepper-backend-ll50.onrender.com/api/parents-campaign/${campaignId}"
       );
 
       if (response.data.success) {
