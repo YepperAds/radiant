@@ -1,3 +1,4 @@
+// AllPlatformsView.js
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import CategoryCard from './CategoryCard';
@@ -26,17 +27,17 @@ function AllPlatformsView({
       {showLeftButton && (
         <button
           onClick={() => scrollCategories('left')}
-          className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full p-2 sm:p-3 shadow-lg hover:bg-gray-50 transition-all"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white border border-gray-200 rounded-full p-3 hover:border-black transition-all"
           aria-label="Scroll left"
         >
-          <ChevronLeft size={20} className="sm:w-6 sm:h-6 text-gray-700" />
+          <ChevronLeft size={20} className="text-gray-700" />
         </button>
       )}
 
       {/* Categories Container */}
       <div 
         ref={categoriesScrollRef}
-        className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-hide scroll-smooth px-8 sm:px-12 md:px-16"
+        className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth px-12"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {Object.entries(allPlatforms).map(([category, items]) => (
@@ -63,10 +64,10 @@ function AllPlatformsView({
       {showRightButton && (
         <button
           onClick={() => scrollCategories('right')}
-          className="absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full p-2 sm:p-3 shadow-lg hover:bg-gray-50 transition-all"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white border border-gray-200 rounded-full p-3 hover:border-black transition-all"
           aria-label="Scroll right"
         >
-          <ChevronRight size={20} className="sm:w-6 sm:h-6 text-gray-700" />
+          <ChevronRight size={20} className="text-gray-700" />
         </button>
       )}
     </div>

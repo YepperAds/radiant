@@ -10,8 +10,8 @@ function SingleCategoryView({
   getSocialIcon
 }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-md p-4 sm:p-6 mb-24">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+    <div className="bg-white border border-gray-200 rounded-sm p-6 mb-24">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {filteredPlatforms.map(platform => (
           <PlatformCard
             key={platform.id}

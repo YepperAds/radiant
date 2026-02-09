@@ -1,3 +1,4 @@
+// BottomBar.js
 import React from 'react';
 
 function BottomBar({ selectedCount, totalCount, handleContinue }) {

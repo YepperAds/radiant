@@ -8,10 +8,10 @@ function SearchBar({ searchQuery, setSearchQuery }) {
         placeholder="Search platforms..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full px-4 sm:px-5 py-3 sm:py-4 pl-10 sm:pl-12 border border-gray-300 rounded-xl bg-white text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+        className="w-full px-5 py-4 pl-12 border border-gray-200 rounded-sm bg-white text-[15px] focus:outline-none focus:border-black transition-colors"
       />
       <svg
-        className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
+        className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
