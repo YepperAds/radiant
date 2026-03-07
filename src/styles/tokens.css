@@ -1,0 +1,43 @@
+/* tokens.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Colors */
+  --navy: #0D1B2A;
+  --navy-mid: #152435;
+  --navy-light: #1E3148;
+  --gold: #C9943A;
+  --gold-light: #E5B96A;
+  --gold-pale: #FDF6E8;
+  --cream: #F7F3ED;
+  --white: #FFFFFF;
+  --slate: #4A6380;
+  --slate-light: #7A94AD;
+  --mist: #EBF1F7;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --error: #C62828;
+  --error-bg: #FFEBEE;
+  --warning: #E65100;
+  --border: #D8E2EC;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(13,27,42,0.08);
+  --shadow-md: 0 8px 32px rgba(13,27,42,0.12);
+  --shadow-lg: 0 24px 64px rgba(13,27,42,0.18);
+  --shadow-gold: 0 8px 32px rgba(201,148,58,0.25);
+
+  /* Radii */
+  --radius: 16px;
+  --radius-sm: 8px;
+  --radius-lg: 24px;
+
+  /* Motion */
+  --transition: all 0.28s cubic-bezier(0.4,0,0.2,1);
+
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}

@@ -1,132 +1,144 @@
-// pages/Dashboard.js
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Eye, Calendar, User, Building2 } from 'lucide-react';
+import { MY_POLICIES, ACTIVITIES } from "../data/constants";
+import { StatusPill } from "../components/ui";
 
-function Dashboard() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState([]);
-  const [loading, setLoading] = useState(true);
+import Insurance from '../img/shield.png';
+import Document from '../img/document.png';
+import Money from '../img/money.png';
+import Calendar from '../img/calendar.png';
+import Documents from '../img/folder.png';
+import Card from '../img/card.png';
+import Filing from '../img/filing.png';
+import Chat from '../img/chat.png';
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
+const btnPrimary = "bg-gradient-to-br from-[#C9943A] to-[#E5B96A] text-[#0D1B2A] font-bold rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(201,148,58,0.35)] shadow-[0_8px_32px_rgba(201,148,58,0.25)] cursor-pointer border-none font-['DM_Sans']";
 
-  const fetchCampaigns = async () => {
-    try {
-      const response = await fetch('https://yepper-backend-ll50.onrender.com/api/campaigns/my-campaigns', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setCampaigns(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching campaigns:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+const STATS = [
+  { icon: Insurance, bg: "#E3F2FD", label: "Active Policies",  value: "2",        change: "+1 this year",        up: true  },
+  { icon: Document,  bg: "#FFF8E1", label: "Open Claims",       value: "1",        change: "1 processing",        up: false },
+  { icon: Money,     bg: "#E8F5E9", label: "Total Coverage",    value: "RWF 8.4M", change: "Across all policies", up: false },
+  { icon: Calendar,  bg: "#FCE4EC", label: "Next Renewal",      value: "Jan 2026", change: "Motor insurance",     up: false },
+];
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
+const QUICK_ACTIONS = [
+  { icon: Insurance, bg: "#E3F2FD", label: "New Policy",  page: "products"  },
+  { icon: Filing,    bg: "#FFF8E1", label: "File Claim",  page: "claims"    },
+  { icon: Card,      bg: "#E8F5E9", label: "Pay Premium", page: "payments"  },
+  { icon: Documents, bg: "#EDE7F6", label: "Documents",   page: "documents" },
+];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-500">Loading campaigns...</div>
-      </div>
-    );
-  }
-
+export default function Dashboard({ setPage }) {
   return (
-    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-black">My Campaigns</h1>
-          <p className="text-gray-500 mt-2">Welcome back, {user?.name}</p>
+    <div className="p-8 flex-1 animate-[fadeUp_0.4s_ease_both]">
+
+      {/* Welcome banner */}
+      <div className="bg-black rounded-3xl p-9 relative overflow-hidden mb-7">
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-[radial-gradient(circle,rgba(201,148,58,0.15)_0%,transparent_70%)] rounded-full" />
+        <div className="absolute -bottom-20 right-28 w-44 h-44 bg-[radial-gradient(circle,rgba(201,148,58,0.08)_0%,transparent_70%)] rounded-full" />
+        <div className="text-[11px] tracking-[2.5px] uppercase text-[#E5B96A] font-semibold mb-2.5">Welcome back</div>
+        <div className="font-['Playfair_Display'] text-[32px] font-bold text-white leading-tight mb-2.5">Hello, Jean-Pierre</div>
+        <div className="text-white/60 text-[15px] max-w-[480px]">
+          You have 2 active policies and 1 claim being processed. Everything you need, right here.
         </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={() => setPage("products")} className={`px-6 py-3 text-sm font-semibold rounded-lg ${btnPrimary}`}>Get New Insurance</button>
+          <button onClick={() => setPage("claims")} className="px-6 py-3 text-sm font-semibold rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all cursor-pointer">File a Claim</button>
+        </div>
+      </div>
 
-        {campaigns.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">You haven't created any campaigns yet.</p>
-            <button
-              onClick={() => navigate('/select-platforms')}
-              className="px-6 py-3 bg-black text-white hover:bg-gray-800"
-            >
-              Create Your First Campaign
-            </button>
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4 mb-7">
+        {STATS.map((s, i) => (
+          <div key={i} className="bg-white rounded-2xl p-6 border border-[#D8E2EC] hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(13,27,42,0.12)] transition-all cursor-default">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3.5" style={{ background: s.bg }}>
+              <img src={s.icon} alt={s.label} className="w-5 h-5 object-contain" />
+            </div>
+            <div className="font-['Playfair_Display'] text-[28px] font-bold text-[#0D1B2A]">{s.value}</div>
+            <div className="text-[13px] text-[#7A94AD] mt-1">{s.label}</div>
+            <div className={`text-[12px] font-semibold mt-1.5 ${s.up ? "text-green-700" : "text-[#7A94AD]"}`}>
+              {s.up ? "↑ " : ""}{s.change}
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {campaigns.map((campaign) => (
-              <div 
-                key={campaign._id} 
-                className="border border-gray-200 hover:border-black transition-all duration-200 cursor-pointer"
-                onClick={() => navigate(`/review/${campaign._id}`)}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-black mb-1">
-                        {campaign.businessName}
-                      </h3>
-                      <p className="text-sm text-gray-500">{campaign.fullName}</p>
-                    </div>
-                    <Eye size={20} className="text-gray-400 hover:text-black" />
-                  </div>
+        ))}
+      </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar size={16} />
-                      <span>{formatDate(campaign.createdAt)}</span>
-                    </div>
-                  </div>
+      {/* Quick Actions */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="font-['Playfair_Display'] text-xl font-bold text-[#0D1B2A]">Quick Actions</div>
+      </div>
+      <div className="grid grid-cols-4 gap-3.5 mb-7">
+        {QUICK_ACTIONS.map((a, i) => (
+          <div key={i} onClick={() => setPage(a.page)} className="bg-white border border-[#D8E2EC] rounded-2xl p-5 text-center cursor-pointer flex flex-col items-center gap-2.5 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(13,27,42,0.12)] hover:border-[#C9943A] transition-all">
+            <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center" style={{ background: a.bg }}>
+              <img src={a.icon} alt={a.label} className="w-6 h-6 object-contain" />
+            </div>
+            <span className="text-[13px] font-semibold text-[#0D1B2A]">{a.label}</span>
+          </div>
+        ))}
+      </div>
 
-                  <div className="border-t border-gray-100 pt-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Channels</span>
-                      <span className="font-medium text-black">
-                        {campaign.selectedChannels.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mt-2">
-                      <span className="text-gray-500">Platforms</span>
-                      <span className="font-medium text-black">
-                        {campaign.selectedPlatforms.length}
-                      </span>
-                    </div>
+      {/* Policies + Activity */}
+      <div className="grid grid-cols-2 gap-6 mb-7">
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-['Playfair_Display'] text-xl font-bold text-[#0D1B2A]">My Policies</div>
+            <button className="text-[13px] font-semibold text-[#C9943A] bg-none border-none cursor-pointer hover:text-[#E5B96A] transition-all" onClick={() => setPage("policies")}>View All →</button>
+          </div>
+          {MY_POLICIES.slice(0, 2).map((p) => (
+            <div key={p.id} className="bg-white rounded-2xl border border-[#D8E2EC] p-5 mb-3.5 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(13,27,42,0.12)] hover:border-[#C9943A] transition-all cursor-pointer">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex gap-3 items-center">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: p.bg }}>
+                    <img src={p.icon} alt={p.type} className="w-7 h-7 object-contain" />
                   </div>
-
-                  <div className="mt-4">
-                    <span className={`inline-block px-3 py-1 text-xs font-medium ${
-                      campaign.status === 'pending' 
-                        ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' 
-                        : campaign.status === 'completed'
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-blue-50 text-blue-700 border border-blue-200'
-                    }`}>
-                      {campaign.status.replace('_', ' ').toUpperCase()}
-                    </span>
+                  <div>
+                    <div className="font-bold text-[15px] text-[#0D1B2A] mb-1">{p.type}</div>
+                    <div className="font-mono text-[11px] text-[#7A94AD]">{p.id}</div>
                   </div>
                 </div>
+                <StatusPill status={p.status} />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div><label className="text-[10px] uppercase tracking-[1px] text-[#7A94AD] block mb-0.5">Premium</label><span className="text-sm font-semibold text-[#0D1B2A]">{p.premium}</span></div>
+                <div><label className="text-[10px] uppercase tracking-[1px] text-[#7A94AD] block mb-0.5">Expires</label><span className="text-sm font-semibold text-[#0D1B2A]">{p.end}</span></div>
+              </div>
+              <div className="h-[3px] bg-[#EBF1F7] rounded-full mt-4">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#C9943A] to-[#E5B96A]" style={{ width: `${p.progress}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <div className="font-['Playfair_Display'] text-xl font-bold text-[#0D1B2A] mb-4">Recent Activity</div>
+          <div className="bg-white border border-[#D8E2EC] rounded-2xl p-6">
+            {ACTIVITIES.map((a, i) => (
+              <div key={i} className="flex gap-3.5 py-3.5 border-b border-[#D8E2EC] last:border-none last:pb-0">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: a.color }}>
+                  <img src={a.icon} alt="" className="w-[18px] h-[18px] object-contain" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-[#0D1B2A] mb-0.5">{a.text}</div>
+                  <div className="text-[12px] text-[#7A94AD]">{a.sub}</div>
+                </div>
+                <div className="text-[11px] text-[#7A94AD] font-mono whitespace-nowrap">{a.time}</div>
               </div>
             ))}
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Chat CTA */}
+      <div className="bg-black rounded-3xl p-6 px-7 flex items-center gap-5 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_24px_64px_rgba(13,27,42,0.18)] transition-all mb-7">
+        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
+          <img src={Chat} alt="" className="w-6 h-6 object-contain" />
+        </div>
+        <div>
+          <div className="font-['Playfair_Display'] text-[17px] font-bold text-white mb-1">Need help choosing a plan?</div>
+          <div className="text-[13px] text-white/60">Our virtual agent can guide you through every product.</div>
+        </div>
+        <button className="ml-auto bg-[#C9943A] text-[#0D1B2A] border-none rounded-lg px-[18px] py-2.5 text-[13px] font-bold cursor-pointer shrink-0 font-['DM_Sans']">Chat with Agent</button>
+      </div>
+
     </div>
   );
 }
-
-export default Dashboard;
