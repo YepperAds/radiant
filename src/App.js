@@ -1,49 +1,51 @@
-import { useState } from "react";
+// App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { AuthProvider } from './context/AuthContext';
+import Home from './pages/Home';
+import AdultsCampaigns from './pages/page/AdultsCampaigns'
+import CarOwnersCampaigns from './pages/page/carOwnersCampaigns'
+import CountrySidersCampaigns from './pages/page/countrySidersCampaigns'
+import ParentsCampaigns from './pages/page/parentsCampaigns'
+import TransportersCampaigns from './pages/page/transportersCampaigns'
+import YouthCampaigns from './pages/page/youthCampaigns'
 
-// Styles
-import "./styles/tokens.css";
-import "./styles/global.css";
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+    },
+  },
+});
 
-// Layout
-import Sidebar from "./components/Sidebar";
-import TopBar  from "./components/TopBar";
-
-// Pages
-import Dashboard     from "./pages/Dashboard";
-import ProductsPage  from "./pages/ProductsPage";
-import ApplyPage     from "./pages/ApplyPage";
-import PoliciesPage  from "./pages/PoliciesPage";
-import ClaimsPage    from "./pages/ClaimsPage";
-import PaymentsPage  from "./pages/PaymentsPage";
-import DocumentsPage from "./pages/DocumentsPage";
-import ProfilePage   from "./pages/ProfilePage";
-
-export default function App() {
-  const [page, setPage]                 = useState("dashboard");
-  const [selectedProduct, setProduct]   = useState(null);
-
-  const renderPage = () => {
-    switch (page) {
-      case "dashboard": return <Dashboard setPage={setPage} />;
-      case "products":  return <ProductsPage setPage={setPage} setSelectedProduct={setProduct} />;
-      case "apply":     return <ApplyPage product={selectedProduct} setPage={setPage} />;
-      case "policies":  return <PoliciesPage setPage={setPage} />;
-      case "claims":    return <ClaimsPage />;
-      case "payments":  return <PaymentsPage />;
-      case "documents": return <DocumentsPage />;
-      case "profile":   return <ProfilePage />;
-      default:          return <Dashboard setPage={setPage} />;
-    }
-  };
-
+function App() {
   return (
-    // bg-[#F7F3ED] = --cream
-    <div className="flex min-h-screen bg-[#F7F3ED] font-['DM_Sans']">
-      <Sidebar page={page} setPage={setPage} />
-      <div className="ml-[280px] flex-1 min-h-screen flex flex-col">
-        <TopBar page={page} setPage={setPage} />
-        {renderPage()}
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router>
+          <div>
+            <Routes>
+              <Route path="/working-adult-campaigns" element={<Home />} />
+              <Route path="/high-net-worth-campaigns" element={<AdultsCampaigns />} />
+              <Route path="/car-owners-campaigns" element={<CarOwnersCampaigns />} />
+              <Route path="/country-side-campaigns" element={<CountrySidersCampaigns />} />
+              <Route path="/parents-families-campaigns" element={<ParentsCampaigns />} />
+              <Route path="/motari-transport-campaigns" element={<TransportersCampaigns />} />
+              <Route path="/youth-campaigns" element={<YouthCampaigns />} />
+            </Routes>
+          </div>
+        </Router>
+      </AuthProvider>
+      
+      {/* Add React Query DevTools for development */}
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }
+
+export default App;
