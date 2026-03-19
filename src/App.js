@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from './context/AuthContext';
 import Home from './pages/Home';
+import Rich from './pages/SelectPlatforms';
 import AdultsCampaigns from './pages/page/AdultsCampaigns'
 import CarOwnersCampaigns from './pages/page/carOwnersCampaigns'
 import CountrySidersCampaigns from './pages/page/countrySidersCampaigns'
@@ -30,8 +31,9 @@ function App() {
         <Router>
           <div>
             <Routes>
-              <Route path="/working-adult-campaigns" element={<Home />} />
-              <Route path="/high-net-worth-campaigns" element={<AdultsCampaigns />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/working-adult-campaigns" element={<AdultsCampaigns />} />
+              <Route path="/high-net-worth-campaigns" element={<Rich />} />
               <Route path="/car-owners-campaigns" element={<CarOwnersCampaigns />} />
               <Route path="/country-side-campaigns" element={<CountrySidersCampaigns />} />
               <Route path="/parents-families-campaigns" element={<ParentsCampaigns />} />
