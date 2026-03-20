@@ -1,113 +1,183 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Globe, 
+  Tv, 
+  Radio, 
+  Building2, 
+  Users
+} from 'lucide-react';
+import { Button } from './components';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-
-const campaigns = [
-  { 
-    id: 1, 
-    title: "Average Working Adults (25–45)", 
-    budget: "RWF 18,762,750", 
-    image: "https://images.pexels.com/photos/10415856/pexels-photo-10415856.jpeg",
-    route: "/working-adult-campaigns"
-  },
-  { 
-    id: 2, 
-    title: "Parents & Family Heads", 
-    budget: "RWF 19,037,150", 
-    image: "https://images.pexels.com/photos/3819540/pexels-photo-3819540.jpeg",
-    route: "/parents-families-campaigns"
-  },
-  { 
-    id: 3, 
-    title: "Rural / Countryside Population", 
-    budget: "RWF 2,059,150", 
-    image: "https://images.pexels.com/photos/34445925/pexels-photo-34445925.jpeg",
-    route: "/country-side-campaigns"
-  },
-  { 
-    id: 4, 
-    title: "Motari & Transport Workers", 
-    budget: "RWF 3,237,150", 
-    image: "https://igisabo.rw/wp-content/uploads/2022/02/CODMG-750x375.jpg",
-    route: "/motari-transport-campaigns"
-  },
-  { 
-    id: 5, 
-    title: "Car Owners / Middle–High Income", 
-    budget: "RWF 19,037,150", 
-    image: "https://images.pexels.com/photos/804130/pexels-photo-804130.jpeg",
-    route: "/car-owners-campaigns"
-  },
-  { 
-    id: 6, 
-    title: "High-Net-Worth / Corporate Clients", 
-    budget: "RWF 19,037,150", 
-    image: "https://images.pexels.com/photos/5648103/pexels-photo-5648103.jpeg",
-    route: "/high-net-worth-campaigns"
-  },
-  { 
-    id: 7, 
-    title: "Youth / Young Adults (18–30)", 
-    budget: "RWF 19,037,150", 
-    image: "https://images.pexels.com/photos/5537506/pexels-photo-5537506.jpeg",
-    route: "/youth-campaigns"
-  },
-];
 
 export default function Section1() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [hoveredChannel, setHoveredChannel] = useState(null);
+  const [selectedChannels, setSelectedChannels] = useState([]);
   const navigate = useNavigate();
 
+  const channels = [
+    { id: 'all', icon: Globe, label: 'All', color: 'from-gray-500 to-gray-600' },
+    { id: 'websites', icon: Globe, label: 'On Websites', color: 'from-blue-500 to-blue-600' },
+    { id: 'tv', icon: Tv, label: 'On TVs', color: 'from-purple-500 to-purple-600' },
+    { id: 'radio', icon: Radio, label: 'On Radios', color: 'from-green-500 to-green-600' },
+    { id: 'billboards', icon: Building2, label: 'On Billboards', color: 'from-orange-500 to-orange-600' },
+    { id: 'influencers', icon: Users, label: 'On Influencers', color: 'from-pink-500 to-pink-600' }
+  ];
+
+  const handleChannelToggle = (channelId) => {
+    if (channelId === 'all') {
+      if (selectedChannels.length === channels.length - 1) {
+        setSelectedChannels([]);
+      } else {
+        setSelectedChannels(channels.filter(c => c.id !== 'all').map(c => c.id));
+      }
+    } else {
+      setSelectedChannels(prev => 
+        prev.includes(channelId) 
+          ? prev.filter(id => id !== channelId)
+          : [...prev, channelId]
+      );
+    }
+  };
+
+  const isAllSelected = selectedChannels.length === channels.length - 1;
+
+  const handleNext = () => {
+    if (selectedChannels.length === 0) {
+      alert('Please select at least one channel');
+      return;
+    }
+      
+    navigate('/select-platforms', { 
+      state: { 
+        selectedChannels: selectedChannels.map(channelId => {
+          const channel = channels.find(c => c.id === channelId);
+          return channel ? channel.id : channelId;
+        })
+      } 
+    });
+  };
+
   return (
-    <div className="bg-[#F9F9F9] py-24 px-6">
-      <div className="max-w-[1200px] mx-auto">
-        {/* Header Section */}
-        <header className="mb-20 max-w-2xl">
-          <h1 className="text-5xl md:text-6xl font-medium tracking-tight text-black mb-8 leading-[1.1]">
-            Radiant Smart <br /> 
-            <span className="text-gray-400">Campaigns are here.</span>
-          </h1>
-          <p className="text-lg text-gray-600 leading-relaxed">
-            Select a target demographic to visualize performance metrics 
-            and campaign specifications in real-time.
-          </p>
-        </header>
+    <div className="bg-[#F9F9F9] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
+      {/* Header Section */}
+      <header className="mb-20 max-w-2xl">
+        <h1 className="text-5xl md:text-6xl font-medium tracking-tight text-black mb-8 leading-[1.1]">
+          Smart Campaigns <br /> 
+          <span className="text-gray-400">are here.</span>
+        </h1>
+        <p className="text-lg text-gray-600 leading-relaxed">
+          Select a target demographic to visualize performance metrics 
+          and campaign specifications in real-time.
+        </p>
+      </header>
 
-        <hr className="border-gray-200 mb-12" />
+      <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8">
+          <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8 }}
+              className="relative w-full max-w-md"
+          >
+              <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+                  <Button 
+                      onClick={() => setIsOpen(!isOpen)}
+                      variant="secondary" 
+                      size="lg" 
+                      className="w-full flex items-center justify-center px-4 py-3 sm:py-4 focus:outline-none focus:ring-0"
+                  >
+                      <span className="text-center leading-tight text-sm sm:text-base">
+                          Click to Choose where you want to advertise
+                      </span>
+                  </Button>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-12">
-          {campaigns.map((item) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              onClick={() => navigate(item.route)}
-              className="group cursor-pointer"
-            >
-              {/* Image Container: OpenAI uses fixed ratios and sharp corners or very slight radii */}
-              <div className="relative aspect-[4/5] mb-4 overflow-hidden rounded-sm bg-gray-100">
-                <img 
-                  src={item.image} 
-                  alt={item.title} 
-                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-in-out"
-                />
+                  <AnimatePresence>
+                      {isOpen && (
+                          <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: 'easeInOut' }}
+                              className="overflow-hidden"
+                          >
+                              <div className="p-4 sm:p-6">
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                                      {channels.map((channel, index) => {
+                                          const isSelected = channel.id === 'all' 
+                                              ? isAllSelected 
+                                              : selectedChannels.includes(channel.id);
+                                          
+                                          return (
+                                              <motion.button
+                                                  key={channel.id}
+                                                  initial={{ opacity: 0, y: 20 }}
+                                                  animate={{ opacity: 1, y: 0 }}
+                                                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                                                  onMouseEnter={() => setHoveredChannel(channel.id)}
+                                                  onMouseLeave={() => setHoveredChannel(null)}
+                                                  onClick={() => handleChannelToggle(channel.id)}
+                                                  className={`flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl transition-all duration-200 group relative ${
+                                                      isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+                                                  }`}
+                                              >
+                                                  <div className={`absolute top-1 right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center transition-all duration-200 ${
+                                                      isSelected 
+                                                          ? 'bg-blue-500 scale-100' 
+                                                          : 'bg-gray-200 scale-0 group-hover:scale-100'
+                                                  }`}>
+                                                      {isSelected && (
+                                                          <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                          </svg>
+                                                      )}
+                                                  </div>
+
+                                                  <motion.div
+                                                      whileHover={{ scale: 1.1 }}
+                                                      whileTap={{ scale: 0.95 }}
+                                                      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${channel.color} flex items-center justify-center shadow-lg transition-all duration-200 ${
+                                                          hoveredChannel === channel.id ? 'shadow-xl' : ''
+                                                      } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+                                                  >
+                                                      <channel.icon size={24} className="text-white sm:w-7 sm:h-7" />
+                                                  </motion.div>
+                                                  <span className="text-xs font-medium text-gray-700 text-center leading-tight group-hover:text-gray-900 transition-colors">
+                                                      {channel.label}
+                                                  </span>
+                                              </motion.button>
+                                          );
+                                      })}
+                                  </div>
+
+                                  <div className='flex items-center justify-end'>
+                                      <Button 
+                                          onClick={handleNext}
+                                          variant="secondary" 
+                                          size="md" 
+                                          className="px-4 sm:px-6 text-sm sm:text-base"
+                                          disabled={selectedChannels.length === 0}
+                                      >
+                                          Next
+                                      </Button>
+                                  </div>
+                              </div>
+                          </motion.div>
+                      )}
+                  </AnimatePresence>
               </div>
-              
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-[15px] font-medium text-black mb-1 group-hover:underline decoration-1 underline-offset-4">
-                    {item.title}
-                  </h3>
-                  <p className="text-[13px] text-gray-500 tabular-nums">Budget: {item.budget}</p>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                   <span className="text-xl">↗</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
+              <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="absolute -top-4 -right-4 w-16 h-16 sm:w-20 sm:h-20 bg-blue-500/10 rounded-full blur-xl -z-10"
+              />
+              <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  className="absolute -bottom-4 -left-4 w-20 h-20 sm:w-24 sm:h-24 bg-purple-500/10 rounded-full blur-xl -z-10"
+              />
+          </motion.div>
       </div>
     </div>
   );

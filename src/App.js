@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from './context/AuthContext';
 import Home from './pages/Home';
+import Media from './pages/Media'
+import UserInfoForm from './pages/UserInfoForm'
+import Analysis from './pages/Analysis';
+
 import Rich from './pages/SelectPlatforms';
 import AdultsCampaigns from './pages/page/AdultsCampaigns'
 import CarOwnersCampaigns from './pages/page/carOwnersCampaigns'
@@ -32,6 +36,10 @@ function App() {
           <div>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/select-platforms" element={<Media />} />
+              <Route path="/user-info" element={<UserInfoForm />} />
+              <Route path="/analysis" element={<Analysis />} />
+
               <Route path="/working-adult-campaigns" element={<AdultsCampaigns />} />
               <Route path="/high-net-worth-campaigns" element={<Rich />} />
               <Route path="/car-owners-campaigns" element={<CarOwnersCampaigns />} />
@@ -43,8 +51,6 @@ function App() {
           </div>
         </Router>
       </AuthProvider>
-      
-      {/* Add React Query DevTools for development */}
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
