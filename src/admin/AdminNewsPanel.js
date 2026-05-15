@@ -1,10 +1,12 @@
 // AdminNewsPanel.js — Cassette Futurism · Palanomic
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
 import AddNewsForm from './AddNewsForm';
 import { getNews, deleteNews, updateNews } from '../services/api';
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const CAT_BADGES = {
   growth:     { bg: '#0f2a0f', text: '#6adf6a' },
@@ -495,7 +497,8 @@ function EditNewsModal({ item, onSuccess, onCancel }) {
     }
     setSaving(true); setError('');
     try {
-      await updateNews(item._id, form);
+      const payload = { ...form, image: form.imageUrl };
+      await updateNews(item._id, payload);
       onSuccess();
     } catch (err) {
       setError(err.response?.data?.message || 'Save failed. Please try again.');
@@ -553,8 +556,13 @@ function EditNewsModal({ item, onSuccess, onCancel }) {
                 <option value="review">In Review</option>
               </select>
             </div>
-            <div><label style={L}>Image URL</label><input value={form.imageUrl} onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))} placeholder="https://…" style={F} /></div>
           </div>
+
+          {/* ── GCS Image Upload ── */}
+          <ImageUploader
+            imageUrl={form.imageUrl}
+            onUpload={(url) => setForm(p => ({ ...p, imageUrl: url }))}
+          />
 
           {/* Edit note — only relevant for published articles */}
           {isPublished && (
@@ -588,6 +596,97 @@ function EditNewsModal({ item, onSuccess, onCancel }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+// ── Shared Image Upload Widget (used in EditNewsModal) ─────────────────────────
+function ImageUploader({ imageUrl, onUpload }) {
+  const [isDragging,  setIsDragging]  = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
+
+  const uploadFile = useCallback(async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setUploadError('Only image files are allowed.'); return; }
+    if (file.size > 10 * 1024 * 1024)   { setUploadError('Image must be under 10 MB.'); return; }
+    setIsUploading(true); setUploadError('');
+    const token = localStorage.getItem('authToken');
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await fetch(`${API_BASE}/api/upload/article-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      onUpload(data.url);
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally { setIsUploading(false); }
+  }, [onUpload]);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault(); setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadFile(file);
+  }, [uploadFile]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) uploadFile(file);
+    e.target.value = '';
+  };
+
+  const F_LABEL = { display: 'block', fontFamily: "'Oswald', sans-serif", fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#ff6600', marginBottom: 5, fontWeight: 500 };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={F_LABEL}>Article Image</label>
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+
+      {imageUrl ? (
+        <div style={{ position: 'relative', borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(255,102,0,0.3)' }}>
+          <img src={imageUrl} alt="Article preview" style={{ width: '100%', maxHeight: 180, objectFit: 'cover', display: 'block' }} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px' }}>
+            <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.62rem', letterSpacing: '0.12em', color: '#22c55e', textTransform: 'uppercase' }}>✓ Cloud Storage</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button type="button" onClick={() => fileInputRef.current?.click()} style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(255,102,0,0.2)', border: '1px solid rgba(255,102,0,0.4)', color: '#ff6600', padding: '4px 10px', cursor: 'pointer', borderRadius: 2 }}>Replace</button>
+              <button type="button" onClick={() => { onUpload(''); setUploadError(''); }} style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', padding: '4px 10px', cursor: 'pointer', borderRadius: 2 }}>Remove</button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          onDragEnter={() => setIsDragging(true)}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => !isUploading && fileInputRef.current?.click()}
+          style={{ border: `2px dashed ${isDragging ? '#ff6600' : 'rgba(255,102,0,0.25)'}`, borderRadius: 2, background: isDragging ? 'rgba(255,102,0,0.06)' : '#0d0d0d', padding: '22px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: isUploading ? 'not-allowed' : 'pointer', transition: 'all 0.15s', textAlign: 'center' }}
+        >
+          {isUploading ? (
+            <>
+              <svg style={{ animation: 'spin 0.8s linear infinite', color: '#ff6600' }} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#ff6600' }}>Uploading…</span>
+            </>
+          ) : (
+            <>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={isDragging ? '#ff6600' : '#555'} strokeWidth="1.5" style={{ transition: 'stroke 0.15s' }}>
+                <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+              </svg>
+              <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: isDragging ? '#ff6600' : '#888' }}>
+                Drop image or <span style={{ color: '#ff6600', textDecoration: 'underline' }}>Browse</span>
+              </div>
+              <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: '0.7rem', color: '#555' }}>JPG, PNG, WEBP, GIF — max 10 MB</div>
+            </>
+          )}
+        </div>
+      )}
+
+      {uploadError && <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.65rem', color: '#ef4444', marginTop: 4 }}>⚠ {uploadError}</div>}
     </div>
   );
 }
