@@ -11,7 +11,7 @@ const FIELD_STYLE = {
   padding: '9px 12px',
   fontFamily: "'Libre Baskerville', serif",
   fontSize: '0.88rem',
-  color: '#f0f0f0',
+  color: '#f0f0f0', 
   outline: 'none',
   transition: 'border-color 0.15s',
   boxSizing: 'border-box',
