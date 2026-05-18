@@ -10,7 +10,7 @@ import AdminRegister from './auth/AdminRegister';
 import AdminLogin from './auth/AdminLogin';
 import NotFound from './components/NotFound';
 import ProtectedRoute from './components/ProjectedRoute';
-
+ 
 function App() {
   return (
     <Routes>
