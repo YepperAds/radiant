@@ -26,24 +26,12 @@ const CAT_COLORS = {
 const MKT_COLORS = { stocks: '#f59e0b', forex: '#a78bfa', goods: '#fb7185' };
 const CHG_COLORS = { up: '#22c55e', dn: '#ef4444', nt: '#888' };
 
-function Pill({ label, bg, color }) {
-  return (
-    <span style={{
-      display: 'inline-block', padding: '1px 7px',
-      fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase',
-      borderRadius: 2, background: bg, color,
-      fontFamily: "'Oswald', sans-serif",
-    }}>{label}</span>
-  );
-}
-
 function Skel({ w = '100%', h = 11, mb = 8 }) {
   return <div className="skel" style={{ width: w, height: h, marginBottom: mb, borderRadius: 2 }} />;
 }
 
 // ── News History sub-panel ────────────────────────────────────────────────────
 function NewsHistory() {
-  const navigate = useNavigate();
   const [articles, setArticles]   = useState([]);
   const [pagination, setPag]      = useState({ current: 1, total: 1, count: 0 });
   const [summary, setSummary]     = useState(null);
