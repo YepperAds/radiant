@@ -57,7 +57,7 @@ function ImageUploader({ imageUrl, onUpload }) {
     const formData = new FormData();
     formData.append('image', file);
     try {
-      const res = await fetch(`${API_BASE}api/upload/article-image`, {
+      const res = await fetch(`${API_BASE}/api/upload/article-image`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
