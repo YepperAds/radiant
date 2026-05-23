@@ -4,6 +4,10 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/article/:id",
+      "destination": "https://economy-dcpb.onrender.com/article/:id"
+    },
+    {
       "source": "/((?!static|favicon\\.ico|manifest\\.json|robots\\.txt).*)",
       "destination": "/index.html"
     }
