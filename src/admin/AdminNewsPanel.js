@@ -462,6 +462,94 @@ export default function AdminNewsPanel() {
 }
 
 // ─── Edit News Modal ───────────────────────────────────────────────────────────
+// ── Inline Content Editor (sub-headers + images) — used in EditNewsModal ───────
+const API_BASE_NEWS = process.env.REACT_APP_API_URL || 'https://palanomic-backend.onrender.com';
+
+function EditContentEditor({ value, onChange, F, L }) {
+  const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  const insertSubheader = () => {
+    const ta = textareaRef.current;
+    const start = ta ? ta.selectionStart : value.length;
+    const needsNL = start > 0 && value[start - 1] !== '\n';
+    const token = `${needsNL ? '\n\n' : ''}## Sub-header text\n\n`;
+    const newValue = value.slice(0, start) + token + value.slice(start);
+    onChange(newValue);
+    requestAnimationFrame(() => { ta?.focus(); ta?.setSelectionRange(start + token.length, start + token.length); });
+  };
+
+  const insertImageUrl = (url) => {
+    const ta = textareaRef.current;
+    const start = ta ? ta.selectionStart : value.length;
+    const needsNL = start > 0 && value[start - 1] !== '\n';
+    const token = `${needsNL ? '\n\n' : ''}![image](${url})\n\n`;
+    const newValue = value.slice(0, start) + token + value.slice(start);
+    onChange(newValue);
+    requestAnimationFrame(() => { ta?.focus(); ta?.setSelectionRange(start + token.length, start + token.length); });
+  };
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setUploadError('Only image files are allowed.'); return; }
+    if (file.size > 10 * 1024 * 1024) { setUploadError('Image must be under 10 MB.'); return; }
+    setIsUploading(true); setUploadError('');
+    const token = localStorage.getItem('authToken');
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await fetch(`${API_BASE_NEWS}/api/upload/article-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      insertImageUrl(data.url);
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const BTN = {
+    fontFamily: "'Oswald', sans-serif", fontSize: '0.62rem', letterSpacing: '0.12em',
+    textTransform: 'uppercase', background: 'rgba(255,102,0,0.08)',
+    border: '1px solid rgba(255,102,0,0.25)', color: '#ff6600',
+    padding: '6px 12px', cursor: 'pointer', borderRadius: 2,
+    display: 'flex', alignItems: 'center', gap: 6,
+  };
+
+  return (
+    <div>
+      <label style={L}>Content *</label>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+        <button type="button" onClick={insertSubheader} style={BTN}>Sub-header</button>
+        <button type="button" onClick={() => !isUploading && fileInputRef.current?.click()} disabled={isUploading} style={{ ...BTN, opacity: isUploading ? 0.5 : 1 }}>
+          {isUploading ? 'Uploading…' : 'Insert Image'}
+        </button>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+      </div>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        rows={9}
+        placeholder={'Use "## Sub-header" for bold sub-headers and "![image](url)" to embed images inline.'}
+        style={{ ...F, resize: 'vertical', fontFamily: 'monospace' }}
+      />
+      {uploadError && (
+        <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.65rem', color: '#ef4444', marginTop: 4 }}>⚠ {uploadError}</div>
+      )}
+    </div>
+  );
+}
+
 function EditNewsModal({ item, onSuccess, onCancel }) {
   const [form, setForm] = useState({
     title:    item.title    || '',
@@ -538,7 +626,7 @@ function EditNewsModal({ item, onSuccess, onCancel }) {
 
           <div><label style={L}>Title *</label><input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} style={F} /></div>
           <div><label style={L}>Summary</label><textarea value={form.summary} onChange={e => setForm(p => ({ ...p, summary: e.target.value }))} rows={2} style={{ ...F, resize: 'vertical' }} /></div>
-          <div><label style={L}>Content *</label><textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} rows={9} style={{ ...F, resize: 'vertical' }} /></div>
+          <EditContentEditor value={form.content} onChange={(val) => setForm(p => ({ ...p, content: val }))} F={F} L={L} />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div><label style={L}>Author</label><input value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} style={F} /></div>

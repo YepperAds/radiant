@@ -34,6 +34,135 @@ const SECTION_STYLE = {
   gap: 4,
 };
 
+// ── Inline Content Editor (supports bold sub-headers and inline images) ────────
+function ContentEditor({ value, onChange }) {
+  const textareaRef = useRef(null);
+  const inlineFileInputRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  const insertAtCursor = useCallback((before, after = '', placeholder = '') => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = value.slice(start, end) || placeholder;
+    const newValue = value.slice(0, start) + before + selected + after + value.slice(end);
+    onChange(newValue);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const cursorPos = start + before.length + selected.length + after.length;
+      ta.setSelectionRange(cursorPos, cursorPos);
+    });
+  }, [value, onChange]);
+
+  const insertSubheader = () => {
+    const ta = textareaRef.current;
+    const start = ta ? ta.selectionStart : value.length;
+    const needsNewlineBefore = start > 0 && value[start - 1] !== '\n';
+    insertAtCursor(`${needsNewlineBefore ? '\n\n' : ''}## `, '\n\n', 'Sub-header text');
+  };
+
+  const insertImageUrl = (url) => {
+    const ta = textareaRef.current;
+    const start = ta ? ta.selectionStart : value.length;
+    const needsNewlineBefore = start > 0 && value[start - 1] !== '\n';
+    const token = `${needsNewlineBefore ? '\n\n' : ''}![image](${url})\n\n`;
+    const pos = start;
+    const newValue = value.slice(0, pos) + token + value.slice(pos);
+    onChange(newValue);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const cursorPos = pos + token.length;
+      ta.setSelectionRange(cursorPos, cursorPos);
+    });
+  };
+
+  const handleInlineFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setUploadError('Only image files are allowed.'); return; }
+    if (file.size > 10 * 1024 * 1024) { setUploadError('Image must be under 10 MB.'); return; }
+    setIsUploading(true);
+    setUploadError('');
+    const token = localStorage.getItem('authToken');
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await fetch(`${API_BASE}/api/upload/article-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      insertImageUrl(data.url);
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const TOOLBAR_BTN_STYLE = {
+    fontFamily: "'Oswald', sans-serif",
+    fontSize: '0.62rem',
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    background: 'rgba(255,102,0,0.08)',
+    border: '1px solid rgba(255,102,0,0.25)',
+    color: '#ff6600',
+    padding: '6px 12px',
+    cursor: 'pointer',
+    borderRadius: 2,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    transition: 'all 0.15s',
+  };
+
+  return (
+    <div style={SECTION_STYLE}>
+      <label style={LABEL_STYLE}>Content</label>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+        <button type="button" className="anf-tool" onClick={insertSubheader} style={TOOLBAR_BTN_STYLE}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+          Sub-header
+        </button>
+        <button type="button" className="anf-tool" onClick={() => !isUploading && inlineFileInputRef.current?.click()} disabled={isUploading} style={{ ...TOOLBAR_BTN_STYLE, opacity: isUploading ? 0.5 : 1, cursor: isUploading ? 'not-allowed' : 'pointer' }}>
+          {isUploading ? (
+            <svg style={{ animation: 'spin 0.8s linear infinite' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          )}
+          {isUploading ? 'Uploading…' : 'Insert Image'}
+        </button>
+        <input ref={inlineFileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleInlineFile} />
+      </div>
+
+      <textarea
+        ref={textareaRef}
+        className="anf-field"
+        name="content"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        rows={12}
+        placeholder={'Full article body…\n\nUse the toolbar to insert bold sub-headers ("## Sub-header") and images ("![image](url)") anywhere in the text.'}
+        style={{ ...FIELD_STYLE, resize: 'vertical', lineHeight: 1.75, fontFamily: "monospace" }}
+      />
+      {uploadError && (
+        <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.65rem', letterSpacing: '0.1em', color: '#ef4444', marginTop: 4 }}>⚠ {uploadError}</div>
+      )}
+      <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: '0.7rem', color: '#555' }}>
+        Sub-headers use <code>## text</code> on their own line. Images use <code>![image](url)</code> on their own line.
+      </div>
+    </div>
+  );
+}
+
 // ── Image Upload Widget ────────────────────────────────────────────────────────
 function ImageUploader({ imageUrl, onUpload }) {
   const [isDragging,  setIsDragging]  = useState(false);
@@ -212,10 +341,7 @@ export default function AddNewsForm({ onSuccess, onCancel }) {
                 <textarea className="anf-field" name="summary" value={formData.summary} onChange={handleChange} required rows={2} placeholder="Brief description shown in article cards…" style={{ ...FIELD_STYLE, resize: 'vertical', lineHeight: 1.6 }} />
               </div>
 
-              <div style={SECTION_STYLE}>
-                <label style={LABEL_STYLE}>Content</label>
-                <textarea className="anf-field" name="content" value={formData.content} onChange={handleChange} required rows={8} placeholder="Full article body…" style={{ ...FIELD_STYLE, resize: 'vertical', lineHeight: 1.75 }} />
-              </div>
+              <ContentEditor value={formData.content} onChange={(val) => setFormData(prev => ({ ...prev, content: val }))} />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div style={SECTION_STYLE}>
