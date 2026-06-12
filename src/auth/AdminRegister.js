@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = 'https://economy-dcpb.onrender.com';
+const API_URL = 'https://palanomic-backend.onrender.com';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Oswald:wght@300;400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');

@@ -6,7 +6,7 @@ import AdminSidebar from './AdminSidebar';
 import AddNewsForm from './AddNewsForm';
 import { getNews, deleteNews, updateNews } from '../services/api';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'https://economy-dcpb.onrender.com';
+const API_BASE = process.env.REACT_APP_API_URL || 'https://palanomic-backend.onrender.com';
 
 const CAT_BADGES = {
   growth:     { bg: '#0f2a0f', text: '#6adf6a' },

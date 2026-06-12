@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { createNews } from '../services/api';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'https://economy-dcpb.onrender.com';
+const API_BASE = process.env.REACT_APP_API_URL || 'https://palanomic-backend.onrender.com';
 
 const FIELD_STYLE = {
   width: '100%',
