@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
-import { bulkImport } from '../services/api';
+import { bulkImport, generateAIDraft } from '../services/api';
 
 const EXAMPLE = `{
   "articles": [
@@ -34,12 +34,30 @@ const labelStyle = {
 };
 
 export default function AdminBulkImportPanel() {
+  const [rawInput,   setRawInput]   = useState('');
+  const [drafting,   setDrafting]   = useState(false);
+  const [draftError, setDraftError] = useState('');
   const [raw,        setRaw]        = useState('');
   const [parseError, setParseError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [response,   setResponse]   = useState(null);
   const [submitError, setSubmitError] = useState('');
   const navigate = useNavigate();
+
+  const handleDraft = async () => {
+    setDraftError('');
+    setResponse(null);
+    setDrafting(true);
+    try {
+      const data = await generateAIDraft(rawInput);
+      setRaw(data.json);
+      setParseError('');
+    } catch (err) {
+      setDraftError(err.response?.data?.message || 'Drafting failed');
+    } finally {
+      setDrafting(false);
+    }
+  };
 
   const handleLogout = () => {
     ['authToken', 'userRole', 'userEmail', 'userName'].forEach((k) => localStorage.removeItem(k));
@@ -116,6 +134,54 @@ export default function AdminBulkImportPanel() {
             }}>
               Load Contract Template
             </button>
+          </div>
+
+          {/* AI Draft */}
+          <div style={{
+            marginBottom: 24, padding: '16px 18px', background: '#151515',
+            border: '1px solid rgba(255,102,0,0.15)', borderRadius: 2,
+          }}>
+            <label style={labelStyle}>Draft With Claude</label>
+            <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: '0.78rem', color: '#666666', marginBottom: 10 }}>
+              Paste a post, a topic, or a price list. Claude researches (with web search), drafts the bulk import JSON below, and you review before submitting.
+            </div>
+            <textarea
+              className="bi-textarea"
+              value={rawInput}
+              onChange={(e) => setRawInput(e.target.value)}
+              placeholder="e.g. Bank of Kigali just posted this on X: ... draft an article on it."
+              style={{
+                width: '100%', minHeight: 100, padding: '12px 14px', background: '#0d0d0d',
+                border: '1px solid rgba(255,102,0,0.2)', borderRadius: 2, color: '#f0f0f0',
+                fontFamily: "'Libre Baskerville', serif", fontSize: '0.85rem', lineHeight: 1.5,
+                outline: 'none', resize: 'vertical', boxSizing: 'border-box', marginBottom: 10,
+              }}
+            />
+            <button
+              className="bi-btn-ghost"
+              onClick={handleDraft}
+              disabled={drafting || !rawInput.trim()}
+              style={{
+                fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.14em',
+                textTransform: 'uppercase', background: drafting ? 'rgba(255,102,0,0.15)' : '#ff6600',
+                color: drafting ? '#a86' : '#000', border: 'none', padding: '9px 20px',
+                cursor: drafting || !rawInput.trim() ? 'not-allowed' : 'pointer', borderRadius: 2,
+                opacity: !rawInput.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 8,
+              }}
+            >
+              {drafting && (
+                <span style={{
+                  width: 12, height: 12, border: '2px solid rgba(0,0,0,0.3)',
+                  borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block',
+                }} />
+              )}
+              {drafting ? 'Drafting… (can take a minute)' : 'Draft With Claude'}
+            </button>
+            {draftError && (
+              <div style={{ marginTop: 10, fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', color: '#ef4444' }}>
+                ⚠ {draftError}
+              </div>
+            )}
           </div>
 
           {/* Textarea */}

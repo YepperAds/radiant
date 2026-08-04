@@ -171,4 +171,10 @@ export const bulkImport = async (payload) => {
   return response.data;
 };
 
+// AI Draft — Claude drafts bulk-import JSON from raw pasted material
+export const generateAIDraft = async (rawInput) => {
+  const response = await api.post('/api/ai-draft/generate', { rawInput });
+  return response.data;
+};
+
 export default api;
