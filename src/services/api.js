@@ -158,4 +158,17 @@ export const adminGetMarketHistory = async (params) => {
   return response.data;
 };
 
+// Clear content data (and optionally public user accounts) — admin logins are never touched
+export const adminClearData = async (includeUserAccounts) => {
+  const response = await api.post('/api/admin/clear-data', { includeUserAccounts, confirm: 'CLEAR DATA' });
+  return response.data;
+};
+
+// ─── Bulk Import ────────────────────────────────────────────────────────────
+
+export const bulkImport = async (payload) => {
+  const response = await api.post('/api/bulk', payload);
+  return response.data;
+};
+
 export default api;

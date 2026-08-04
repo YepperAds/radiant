@@ -39,6 +39,17 @@ const NAV = [
           </svg>
         ),
       },
+      {
+        page: 'bulk-import',
+        label: 'Bulk Import',
+        to: '/admin/bulk-import',
+        icon: (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        ),
+      },
     ],
   },
   {
@@ -75,6 +86,23 @@ const NAV = [
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
             <polyline points="12 8 12 12 14 14" />
             <path d="M3.05 11a9 9 0 1 0 .5-4M3 3v5h5" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    section: 'System',
+    items: [
+      {
+        page: 'danger-zone',
+        label: 'Danger Zone',
+        to: '/admin/danger-zone',
+        accent: '#ef4444',
+        icon: (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
         ),
       },
@@ -124,6 +152,7 @@ function AdminSidebar({ activePage }) {
 
             {group.items.map(item => {
               const isActive = activePage === item.page;
+              const accent = item.accent || '#ff6600';
               return (
                 <Link
                   key={item.page}
@@ -139,9 +168,9 @@ function AdminSidebar({ activePage }) {
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
                     textDecoration: 'none',
-                    color: isActive ? '#ff6600' : '#555555',
-                    borderLeft: `2px solid ${isActive ? '#ff6600' : 'transparent'}`,
-                    background: isActive ? 'rgba(255,102,0,0.08)' : 'transparent',
+                    color: isActive ? accent : '#555555',
+                    borderLeft: `2px solid ${isActive ? accent : 'transparent'}`,
+                    background: isActive ? `${accent}14` : 'transparent',
                     position: 'relative',
                   }}
                 >
@@ -151,11 +180,11 @@ function AdminSidebar({ activePage }) {
                       right: 10, top: '50%',
                       transform: 'translateY(-50%)',
                       width: 5, height: 5,
-                      background: '#ff6600',
+                      background: accent,
                       borderRadius: '50%',
                     }} />
                   )}
-                  <span style={{ color: isActive ? '#ff6600' : '#444444', flexShrink: 0 }}>
+                  <span style={{ color: isActive ? accent : '#444444', flexShrink: 0 }}>
                     {item.icon}
                   </span>
                   {item.label}
