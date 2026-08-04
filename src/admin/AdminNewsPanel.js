@@ -1,4 +1,4 @@
-﻿// AdminNewsPanel.js — Cassette Futurism · Palanomic
+// AdminNewsPanel.js — Cassette Futurism · Palanomic
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from './AdminHeader';
