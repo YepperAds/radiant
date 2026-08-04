@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
-import { bulkImport, generateAIDraft } from '../services/api';
+import ArticleEditModal from './ArticleEditModal';
+import { bulkImport, generateAIDraft, getNewsById } from '../services/api';
 
 const EXAMPLE = `{
   "articles": [
@@ -42,7 +43,26 @@ export default function AdminBulkImportPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [response,   setResponse]   = useState(null);
   const [submitError, setSubmitError] = useState('');
+  const [reviewIds,   setReviewIds]   = useState([]);
+  const [reviewItem,  setReviewItem]  = useState(null);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [reviewError, setReviewError] = useState('');
   const navigate = useNavigate();
+
+  const showNextReview = async (ids) => {
+    if (!ids.length) { setReviewItem(null); setReviewIds([]); return; }
+    const [id, ...rest] = ids;
+    try {
+      const item = await getNewsById(id);
+      setReviewItem(item);
+      setReviewIds(rest);
+    } catch {
+      setReviewError('Could not load one of the created articles — skipped it.');
+      await showNextReview(rest);
+    }
+  };
+
+  const handleReviewDone = () => { showNextReview(reviewIds); };
 
   const handleDraft = async () => {
     setDraftError('');
@@ -67,6 +87,7 @@ export default function AdminBulkImportPanel() {
   const handleSubmit = async () => {
     setParseError('');
     setSubmitError('');
+    setReviewError('');
     setResponse(null);
 
     let payload;
@@ -81,6 +102,13 @@ export default function AdminBulkImportPanel() {
     try {
       const data = await bulkImport(payload);
       setResponse(data);
+      const createdArticleIds = (data.results?.articles || [])
+        .filter((r) => r.ok && r.id)
+        .map((r) => r.id);
+      if (createdArticleIds.length) {
+        setReviewCount(createdArticleIds.length);
+        showNextReview(createdArticleIds);
+      }
     } catch (err) {
       setSubmitError(err.response?.data?.message || err.response?.data?.error || 'Bulk import failed');
     } finally {
@@ -308,8 +336,23 @@ export default function AdminBulkImportPanel() {
             </div>
           )}
 
+          {reviewError && (
+            <div style={{ marginTop: 16, fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', color: '#ef4444' }}>
+              ⚠ {reviewError}
+            </div>
+          )}
+
         </main>
       </div>
+
+      {reviewItem && (
+        <ArticleEditModal
+          item={reviewItem}
+          progressLabel={`${reviewCount - reviewIds.length} of ${reviewCount}`}
+          onSuccess={handleReviewDone}
+          onCancel={handleReviewDone}
+        />
+      )}
     </div>
   );
 }
