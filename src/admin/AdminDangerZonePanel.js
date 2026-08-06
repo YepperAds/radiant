@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
-import { adminClearData } from '../services/api';
+import { adminClearData, adminNormalizeArticles } from '../services/api';
 
 const CONFIRM_PHRASE = 'CLEAR DATA';
 
@@ -110,6 +110,86 @@ function DangerCard({ title, description, keeps, includeUserAccounts, onDone }) 
   );
 }
 
+function NormalizeArticlesCard() {
+  const [submitting, setSubmitting] = useState(false);
+  const [result,     setResult]     = useState(null);
+  const [error,      setError]      = useState('');
+
+  const handleRun = async () => {
+    setSubmitting(true);
+    setError('');
+    setResult(null);
+    try {
+      const data = await adminNormalizeArticles();
+      setResult(data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to normalize articles');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{
+      background: '#151515', border: '1px solid rgba(96,165,250,0.25)',
+      borderRadius: 2, padding: '20px 22px', marginBottom: 18,
+    }}>
+      <div style={{
+        fontFamily: "'Oswald', sans-serif", fontSize: '0.9rem', fontWeight: 700,
+        letterSpacing: '0.12em', textTransform: 'uppercase', color: '#60a5fa', marginBottom: 8,
+      }}>
+        Fix Old Article Formatting
+      </div>
+      <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: '0.82rem', color: '#aaaaaa', marginBottom: 16, maxWidth: 600 }}>
+        Rewrites any article still in the old draft shape (content starting with a literal
+        "Headline: ..." / "Description: ..." block) — drops the duplicate headline/dek text
+        and converts the section labels into real sub-headers. Leaves everything else untouched.
+        Safe to re-run any time.
+      </div>
+
+      <button
+        onClick={handleRun}
+        disabled={submitting}
+        style={{
+          fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', fontWeight: 700,
+          letterSpacing: '0.14em', textTransform: 'uppercase',
+          background: '#60a5fa', color: '#000', border: '1px solid #60a5fa',
+          padding: '10px 20px', cursor: submitting ? 'not-allowed' : 'pointer',
+          borderRadius: 2, opacity: submitting ? 0.6 : 1, transition: 'all 0.15s',
+        }}
+      >
+        {submitting ? 'Fixing…' : 'Fix Old Article Formatting'}
+      </button>
+
+      {error && (
+        <div style={{ marginTop: 12, fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', color: '#ef4444' }}>
+          ⚠ {error}
+        </div>
+      )}
+
+      {result && (
+        <div style={{
+          marginTop: 14, padding: '10px 14px', background: 'rgba(96,165,250,0.06)',
+          border: '1px solid rgba(96,165,250,0.25)', borderRadius: 2,
+        }}>
+          <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', color: '#8fbdf8', marginBottom: result.updated?.length ? 8 : 0 }}>
+            {result.message}
+          </div>
+          {result.updated?.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {result.updated.map((a) => (
+                <span key={a.id} style={{ fontFamily: "'Libre Baskerville', serif", fontSize: '0.78rem', color: '#ccc' }}>
+                  ✓ {a.title}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDangerZonePanel() {
   const navigate = useNavigate();
 
@@ -145,6 +225,20 @@ export default function AdminDangerZonePanel() {
             </div>
           </div>
 
+          <div style={{
+            fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', letterSpacing: '0.18em',
+            textTransform: 'uppercase', color: '#60a5fa', marginBottom: 10,
+          }}>
+            Maintenance
+          </div>
+          <NormalizeArticlesCard />
+
+          <div style={{
+            fontFamily: "'Oswald', sans-serif", fontSize: '0.72rem', letterSpacing: '0.18em',
+            textTransform: 'uppercase', color: '#ef4444', margin: '28px 0 10px',
+          }}>
+            Destructive
+          </div>
           <DangerCard
             title="Clear Content Data"
             description="Deletes every News article, comment, and stock/forex/goods record — including archived price history."

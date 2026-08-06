@@ -164,6 +164,12 @@ export const adminClearData = async (includeUserAccounts) => {
   return response.data;
 };
 
+// One-time cleanup: reformat any article still in the old "Headline: ..." literal-label shape
+export const adminNormalizeArticles = async () => {
+  const response = await api.post('/api/admin/normalize-articles');
+  return response.data;
+};
+
 // ─── Bulk Import ────────────────────────────────────────────────────────────
 
 export const bulkImport = async (payload) => {
