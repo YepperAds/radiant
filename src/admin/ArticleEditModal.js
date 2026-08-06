@@ -6,18 +6,6 @@ import { updateNews } from '../services/api';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'https://palanomic-backend.onrender.com';
 
-const IMAGE_TOKEN = '![image](placeholder)';
-
-function findPlaceholders(text) {
-  const out = [];
-  let idx = text.indexOf(IMAGE_TOKEN);
-  while (idx !== -1) {
-    out.push(idx);
-    idx = text.indexOf(IMAGE_TOKEN, idx + IMAGE_TOKEN.length);
-  }
-  return out;
-}
-
 async function uploadImageFile(file) {
   if (!file.type.startsWith('image/')) throw new Error('Only image files are allowed.');
   if (file.size > 10 * 1024 * 1024) throw new Error('Image must be under 10 MB.');
@@ -34,150 +22,261 @@ async function uploadImageFile(file) {
   return data.url;
 }
 
-// ── One "blank" left by the AI draft where an image belongs ───────────────────
-function PlaceholderSlot({ context, onFilled }) {
-  const fileInputRef = useRef(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState('');
+// ── Block-based content editor ──────────────────────────────────────────────
+// Sub-headers and images render as real, styled elements while editing — no
+// markdown syntax is ever shown. Internally still serializes to the same
+// "## text" / "![image](url)" plain-text format the public site and the AI
+// drafting pipeline already parse, so nothing else has to change.
 
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setIsUploading(true); setError('');
-    try {
-      const url = await uploadImageFile(file);
-      onFilled(url);
-    } catch (err) {
-      setError(err.message || 'Upload failed.');
-    } finally {
-      setIsUploading(false);
-    }
+let blockIdCounter = 0;
+const nextBlockId = () => `blk-${++blockIdCounter}`;
+
+const SUBHEADER_RE = /##\s+([^.!?\n]{1,80}?)(?=\s{2,}|[.!?]|\n|!\[image\]\(|##\s|$)|!\[image\]\((\S+?)\)/g;
+
+function parseContentToBlocks(content) {
+  const blocks = [];
+  if (!content) return blocks;
+
+  const pushParagraphs = (text) => {
+    text.split(/\n{2,}/).map((t) => t.trim()).filter(Boolean).forEach((t) => {
+      blocks.push({ id: nextBlockId(), type: 'paragraph', text: t });
+    });
   };
 
+  let lastIndex = 0;
+  let match;
+  const re = new RegExp(SUBHEADER_RE);
+  while ((match = re.exec(content)) !== null) {
+    pushParagraphs(content.slice(lastIndex, match.index));
+    if (match[1] !== undefined) {
+      blocks.push({ id: nextBlockId(), type: 'subheader', text: match[1].trim() });
+    } else if (match[2] !== undefined) {
+      const url = match[2].trim();
+      blocks.push({ id: nextBlockId(), type: 'image', url: url === 'placeholder' ? '' : url });
+    }
+    lastIndex = re.lastIndex;
+  }
+  pushParagraphs(content.slice(lastIndex));
+
+  return blocks;
+}
+
+function serializeBlocksToContent(blocks) {
+  return blocks
+    .map((b) => {
+      if (b.type === 'subheader') return b.text.trim() ? `## ${b.text.trim()}` : null;
+      if (b.type === 'image') return b.url ? `![image](${b.url})` : null;
+      return b.text.trim() || null;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function BlockControls({ onMoveUp, onMoveDown, onRemove, isFirst, isLast }) {
+  const btn = {
+    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+    color: '#777', width: 22, height: 22, borderRadius: 2, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', padding: 0,
+  };
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
-      background: '#0d0d0d', border: '1px dashed rgba(245,158,11,0.4)', borderRadius: 2,
-    }}>
-      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-      <span style={{ fontFamily: "'Libre Baskerville', serif", fontSize: '0.72rem', color: '#888', fontStyle: 'italic', flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-        …{context}…
-      </span>
-      <button
-        type="button"
-        onClick={() => !isUploading && fileInputRef.current?.click()}
-        disabled={isUploading}
-        style={{
-          fontFamily: "'Oswald', sans-serif", fontSize: '0.62rem', letterSpacing: '0.12em',
-          textTransform: 'uppercase', background: 'rgba(245,158,11,0.12)',
-          border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b',
-          padding: '6px 12px', cursor: isUploading ? 'not-allowed' : 'pointer', borderRadius: 2, flexShrink: 0,
-        }}
-      >
-        {isUploading ? 'Uploading…' : 'Fill Image'}
-      </button>
-      {error && <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.62rem', color: '#ef4444', flexShrink: 0 }}>⚠ {error}</span>}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+      <button type="button" onClick={onMoveUp} disabled={isFirst} style={{ ...btn, opacity: isFirst ? 0.3 : 1 }} title="Move up">↑</button>
+      <button type="button" onClick={onMoveDown} disabled={isLast} style={{ ...btn, opacity: isLast ? 0.3 : 1 }} title="Move down">↓</button>
+      <button type="button" onClick={onRemove} style={{ ...btn, color: '#ef4444', borderColor: 'rgba(239,68,68,0.35)' }} title="Remove">×</button>
     </div>
   );
 }
 
-function EditContentEditor({ value, onChange, F, L }) {
-  const textareaRef = useRef(null);
-  const fileInputRef = useRef(null);
+function InlineImageBlock({ url, onChange }) {
+  const [isDragging,  setIsDragging]  = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState('');
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
 
-  const insertSubheader = () => {
-    const ta = textareaRef.current;
-    const start = ta ? ta.selectionStart : value.length;
-    const needsNL = start > 0 && value[start - 1] !== '\n';
-    const token = `${needsNL ? '\n\n' : ''}## Sub-header text\n\n`;
-    const newValue = value.slice(0, start) + token + value.slice(start);
-    onChange(newValue);
-    requestAnimationFrame(() => { ta?.focus(); ta?.setSelectionRange(start + token.length, start + token.length); });
-  };
-
-  const insertImageUrl = (url) => {
-    const ta = textareaRef.current;
-    const start = ta ? ta.selectionStart : value.length;
-    const needsNL = start > 0 && value[start - 1] !== '\n';
-    const token = `${needsNL ? '\n\n' : ''}![image](${url})\n\n`;
-    const newValue = value.slice(0, start) + token + value.slice(start);
-    onChange(newValue);
-    requestAnimationFrame(() => { ta?.focus(); ta?.setSelectionRange(start + token.length, start + token.length); });
-  };
-
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setIsUploading(true); setUploadError('');
+  const doUpload = async (file) => {
+    setIsUploading(true); setError('');
     try {
-      const url = await uploadImageFile(file);
-      insertImageUrl(url);
+      const uploadedUrl = await uploadImageFile(file);
+      onChange(uploadedUrl);
     } catch (err) {
-      setUploadError(err.message || 'Upload failed. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
+      setError(err.message || 'Upload failed.');
+    } finally { setIsUploading(false); }
   };
 
-  const fillPlaceholderAt = (charIndex, url) => {
-    const newValue = value.slice(0, charIndex) + `![image](${url})` + value.slice(charIndex + IMAGE_TOKEN.length);
-    onChange(newValue);
+  const handleDrop = (e) => {
+    e.preventDefault(); setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) doUpload(file);
   };
 
-  const placeholderIndexes = findPlaceholders(value);
-
-  const BTN = {
-    fontFamily: "'Oswald', sans-serif", fontSize: '0.62rem', letterSpacing: '0.12em',
-    textTransform: 'uppercase', background: 'rgba(255,102,0,0.08)',
-    border: '1px solid rgba(255,102,0,0.25)', color: '#ff6600',
-    padding: '6px 12px', cursor: 'pointer', borderRadius: 2,
-    display: 'flex', alignItems: 'center', gap: 6,
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) doUpload(file);
+    e.target.value = '';
   };
+
+  if (url) {
+    return (
+      <div style={{ position: 'relative', borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(255,102,0,0.3)' }}>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+        <img src={url} alt="" style={{ width: '100%', maxHeight: 220, objectFit: 'cover', display: 'block' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '6px 10px' }}>
+          <button type="button" onClick={() => fileInputRef.current?.click()} style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(255,102,0,0.2)', border: '1px solid rgba(255,102,0,0.4)', color: '#ff6600', padding: '4px 10px', cursor: 'pointer', borderRadius: 2 }}>Replace</button>
+          <button type="button" onClick={() => onChange('')} style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', padding: '4px 10px', cursor: 'pointer', borderRadius: 2 }}>Remove</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onDragEnter={() => setIsDragging(true)}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+      onClick={() => !isUploading && fileInputRef.current?.click()}
+      style={{
+        border: `2px dashed ${isDragging ? '#ff6600' : 'rgba(255,102,0,0.3)'}`, borderRadius: 2,
+        background: isDragging ? 'rgba(255,102,0,0.06)' : '#0d0d0d', padding: '18px 14px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+        cursor: isUploading ? 'not-allowed' : 'pointer', transition: 'all 0.15s', textAlign: 'center',
+      }}
+    >
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+      {isUploading ? (
+        <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.68rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#ff6600' }}>Uploading…</span>
+      ) : (
+        <>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isDragging ? '#ff6600' : '#666'} strokeWidth="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+          </svg>
+          <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.66rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: isDragging ? '#ff6600' : '#777' }}>
+            Image goes here — drop or <span style={{ color: '#ff6600', textDecoration: 'underline' }}>browse</span>
+          </span>
+        </>
+      )}
+      {error && <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.6rem', color: '#ef4444' }}>⚠ {error}</span>}
+    </div>
+  );
+}
+
+function BlockRow({ block, isFirst, isLast, onChange, onRemove, onMoveUp, onMoveDown }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ display: 'flex', alignItems: block.type === 'paragraph' ? 'flex-start' : 'center', gap: 8 }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {block.type === 'paragraph' && (
+          <textarea
+            value={block.text}
+            onChange={(e) => onChange({ text: e.target.value })}
+            placeholder="Write a paragraph…"
+            rows={3}
+            style={{
+              width: '100%', padding: '10px 12px', background: '#0d0d0d',
+              border: '1px solid rgba(255,255,255,0.08)', borderRadius: 2,
+              fontFamily: "'Libre Baskerville', serif", fontSize: '0.88rem', lineHeight: 1.6,
+              color: '#e0e0e0', outline: 'none', resize: 'vertical', boxSizing: 'border-box',
+            }}
+          />
+        )}
+        {block.type === 'subheader' && (
+          <input
+            value={block.text}
+            onChange={(e) => onChange({ text: e.target.value })}
+            placeholder="Sub-header…"
+            style={{
+              width: '100%', padding: '10px 12px', background: '#0d0d0d',
+              border: 'none', borderLeft: '3px solid #ff6600', borderRadius: 2,
+              fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '1.05rem',
+              letterSpacing: '0.02em', color: '#f5efe0', outline: 'none', boxSizing: 'border-box',
+            }}
+          />
+        )}
+        {block.type === 'image' && (
+          <InlineImageBlock url={block.url} onChange={(url) => onChange({ url })} />
+        )}
+      </div>
+      <div style={{ opacity: hover ? 1 : 0.15, transition: 'opacity 0.1s', paddingTop: block.type === 'paragraph' ? 8 : 0 }}>
+        <BlockControls onMoveUp={onMoveUp} onMoveDown={onMoveDown} onRemove={onRemove} isFirst={isFirst} isLast={isLast} />
+      </div>
+    </div>
+  );
+}
+
+function AddBlockButton({ label, onClick }) {
+  return (
+    <button type="button" onClick={onClick} style={{
+      fontFamily: "'Oswald', sans-serif", fontSize: '0.62rem', letterSpacing: '0.12em',
+      textTransform: 'uppercase', background: 'rgba(255,102,0,0.06)',
+      border: '1px dashed rgba(255,102,0,0.3)', color: '#ff6600',
+      padding: '9px 14px', cursor: 'pointer', borderRadius: 2, flex: 1,
+    }}>
+      {label}
+    </button>
+  );
+}
+
+function ContentBlockEditor({ value, onChange, L }) {
+  const [blocks, setBlocks] = useState(() => {
+    const parsed = parseContentToBlocks(value);
+    return parsed.length ? parsed : [{ id: nextBlockId(), type: 'paragraph', text: '' }];
+  });
+
+  const emit = (next) => {
+    setBlocks(next);
+    onChange(serializeBlocksToContent(next));
+  };
+
+  const updateBlock = (id, patch) => emit(blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+  const removeBlock = (id) => emit(blocks.length > 1 ? blocks.filter((b) => b.id !== id) : blocks);
+  const moveBlock = (id, dir) => {
+    const idx = blocks.findIndex((b) => b.id === id);
+    const swapWith = idx + dir;
+    if (swapWith < 0 || swapWith >= blocks.length) return;
+    const next = [...blocks];
+    [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
+    emit(next);
+  };
+  const addBlock = (type) => {
+    const block = type === 'image' ? { id: nextBlockId(), type: 'image', url: '' }
+      : type === 'subheader' ? { id: nextBlockId(), type: 'subheader', text: '' }
+      : { id: nextBlockId(), type: 'paragraph', text: '' };
+    emit([...blocks, block]);
+  };
+
+  const emptyImageCount = blocks.filter((b) => b.type === 'image' && !b.url).length;
 
   return (
     <div>
       <label style={L}>Content *</label>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-        <button type="button" onClick={insertSubheader} style={BTN}>Sub-header</button>
-        <button type="button" onClick={() => !isUploading && fileInputRef.current?.click()} disabled={isUploading} style={{ ...BTN, opacity: isUploading ? 0.5 : 1 }}>
-          {isUploading ? 'Uploading…' : 'Insert Image'}
-        </button>
-        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {blocks.map((block, i) => (
+          <BlockRow
+            key={block.id}
+            block={block}
+            isFirst={i === 0}
+            isLast={i === blocks.length - 1}
+            onChange={(patch) => updateBlock(block.id, patch)}
+            onRemove={() => removeBlock(block.id)}
+            onMoveUp={() => moveBlock(block.id, -1)}
+            onMoveDown={() => moveBlock(block.id, 1)}
+          />
+        ))}
       </div>
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        rows={9}
-        placeholder={'Use "## Sub-header" for bold sub-headers and "![image](url)" to embed images inline.'}
-        style={{ ...F, resize: 'vertical', fontFamily: 'monospace' }}
-      />
-      {uploadError && (
-        <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.65rem', color: '#ef4444', marginTop: 4 }}>⚠ {uploadError}</div>
-      )}
 
-      {placeholderIndexes.length > 0 && (
-        <div style={{ marginTop: 10 }}>
-          <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#f59e0b', marginBottom: 6 }}>
-            ⚠ {placeholderIndexes.length} image{placeholderIndexes.length > 1 ? 's' : ''} needed
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {placeholderIndexes.map((charIndex) => {
-              const contextStart = Math.max(0, charIndex - 45);
-              const context = value.slice(contextStart, charIndex).replace(/\n/g, ' ').trim() || 'start of article';
-              return (
-                <PlaceholderSlot
-                  key={charIndex}
-                  context={context}
-                  onFilled={(url) => fillPlaceholderAt(charIndex, url)}
-                />
-              );
-            })}
-          </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <AddBlockButton label="+ Paragraph" onClick={() => addBlock('paragraph')} />
+        <AddBlockButton label="+ Sub-header" onClick={() => addBlock('subheader')} />
+        <AddBlockButton label="+ Image" onClick={() => addBlock('image')} />
+      </div>
+
+      {emptyImageCount > 0 && (
+        <div style={{ marginTop: 8, fontFamily: "'Oswald', sans-serif", fontSize: '0.62rem', letterSpacing: '0.1em', color: '#f59e0b' }}>
+          ⚠ {emptyImageCount} image slot{emptyImageCount > 1 ? 's' : ''} still empty — left out of the article if you save without filling them.
         </div>
       )}
     </div>
@@ -340,7 +439,7 @@ export default function ArticleEditModal({ item, onSuccess, onCancel, progressLa
 
           <div><label style={L}>Title *</label><input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} style={F} /></div>
           <div><label style={L}>Summary</label><textarea value={form.summary} onChange={e => setForm(p => ({ ...p, summary: e.target.value }))} rows={2} style={{ ...F, resize: 'vertical' }} /></div>
-          <EditContentEditor value={form.content} onChange={(val) => setForm(p => ({ ...p, content: val }))} F={F} L={L} />
+          <ContentBlockEditor value={form.content} onChange={(val) => setForm(p => ({ ...p, content: val }))} L={L} />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div><label style={L}>Author</label><input value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} style={F} /></div>
